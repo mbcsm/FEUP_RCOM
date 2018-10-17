@@ -1,9 +1,14 @@
+#ifndef LINKLAYER_SEEN
+#define LINKLAYER_SEEN
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 //MACHINE_ROLE
 #define NOT_DEFINED -1
@@ -12,6 +17,11 @@
 
 //CONTROL WORDS
 #define SET 0
+#define DISC 1
+#define UA 2
+#define RR 3
+#define REJ 4
+
 
 //PORT
 #define BAUDRATE B38400
@@ -58,3 +68,5 @@ void atende();
 If "0" alarm will run only once. 
 */
 int setNumberOfTimeOuts(int n);
+
+#endif

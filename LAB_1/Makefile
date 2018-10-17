@@ -9,3 +9,8 @@ OBJ = main.c linklayer.c
 rcom: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 
+.PHONY: clean
+
+clean:
+	rm -f *.o rcom 
+

@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "linklayer.h"
 
 int main(int argc, char** argv){
@@ -9,5 +8,5 @@ int main(int argc, char** argv){
       		exit(1);
     	}
 	
-	return llopen(argv[1], 0);
+	return llopen(argv[1], 1);
 }

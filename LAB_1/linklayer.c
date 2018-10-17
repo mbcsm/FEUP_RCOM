@@ -3,6 +3,7 @@
 //alarm variabels
 volatile int ALARM_COUNTING=FALSE;
 int ALARM_COUNT=5;
+int ALARM_FLAG = FALSE;
 volatile int STOP=FALSE;
 
 //machine 
@@ -11,16 +12,17 @@ int MACHINE_ROLE=NOT_DEFINED;
 struct termios oldtio, newtio;
 
 int llsetNewtio(char * port, int *fd){
-  /*
-    Open serial port device for reading and writing and not as controlling tty
-    because we don't want to get killed if linenoise sends CTRL-C.
-  */
+
+	  /*
+		Open serial port device for reading and writing and not as controlling tty
+		because we don't want to get killed if linenoise sends CTRL-C.
+	  */
   
     
     *fd = open(port, O_RDWR | O_NOCTTY );
     if (*fd <0) {perror(port); exit(-1); }
 
-    if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
+    if ( tcgetattr(*fd,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");
       exit(-1);
     }
@@ -52,20 +54,45 @@ int llsetOldtio(int *fd){
     tcsetattr(*fd,TCSANOW,&oldtio);
     close(*fd);
     return 0;
-
 }
 
 int constructControlWord(char * word, int type){
-	switch(type){
+
+	
+
+	strcpy(word, "0x7Eh");//FLAG
+
+	if(MACHINE_ROLE == EMITOR)//CAMPO DE ENDEREÇO
+		strcpy(word, "0x03");
+	else
+		strcpy(word, "0x01");
+ 	
+
+	switch(type){//CAMPO DE CONTROLO
 		case(SET):
-			strcpy(word, "FLAG,A,C,BCC,FLAG");
+			strcpy(word, "0x3h");
+			return 0;				
+			break;
+		case(DISC):
+			strcpy(word, "0xBh");
+			return 0;				
+			break;
+		case(UA):
+			strcpy(word, "0x7h");
+			return 0;				
+			break;
+		case(RR):
+			strcpy(word, "0x5h");
+			return 0;				
+			break;
+		case(REJ):
+			strcpy(word, "0x1h");
 			return 0;				
 			break;
 		default:
 			printf("Control word not defined\n");
 			return 1;
 	}
-	
 }
 
 
@@ -90,7 +117,7 @@ int llopen(char* port, int machine_role){
 	char set[255], msg[255], buf[255];
 	int i=0, res;
 
-	contructControlWord(set, SET);
+	constructControlWord(set, SET);
 	
 	if(MACHINE_ROLE==RECEIVER){	
 		while(STOP==FALSE) {
@@ -117,16 +144,16 @@ int llopen(char* port, int machine_role){
 		printf("MSG received: ");	
 		printf("%s : %d\n", msg, i);
 
-		printf("---------------------------------/nSending_MSG/n--------------------\n");
+		printf("\n---------------------------------\nSending_MSG\n---------------------------------\n");
 
 		res = write(fd,msg, i);   
     		printf("%d bytes written\n", res);
 	
-	}else if (MACHINE_ROLE==SENDER){
+	}else if (MACHINE_ROLE==EMITOR){
 		res = write(fd,set, strlen(set));   
     		printf("%d bytes written\n", res);
 
-		printf("---------------------------------/nReceiving_MSG/n--------------------\n");
+		printf("\n---------------------------------\nReceiving_MSG\n---------------------------------\n");
 		while(STOP==FALSE) {
 			res= read(fd, buf, 1);
 			if(res>0){
