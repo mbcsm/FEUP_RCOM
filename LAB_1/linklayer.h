@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 //MACHINE_ROLE
 #define NOT_DEFINED -1
@@ -22,6 +23,12 @@
 #define RR 3
 #define REJ 4
 
+//CONTROL BYTES
+#define FLAG 0x7e
+
+//BYTE STUFFING
+#define ESCAPE 0x7d
+#define STUFFING 0x20
 
 //PORT
 #define BAUDRATE B38400
@@ -46,7 +53,14 @@ int llsetOldtio(int *fd);
 
 /*It constructs the control word specified in "type" and puts it on "word"*/
 //return "1" on error and "0" on sucesses
-int constructControlWord(char * word, int type);
+int constructControlWord(char * word, int type, int response);
+
+/*does the byte stuffing for a specific char array,
+//@param word - word to do the byte stuffing of
+//@param size - size of the word
+//@param buff - buffer to write the final stuffed word to
+//@return sizeBuff - size of the buff*/
+int ByteStuffing(char * word, int size, char * buff);
 
 /*Opens a conection using the "port"
 //"machie_role" defines the role of the machine:

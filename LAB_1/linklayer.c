@@ -56,43 +56,101 @@ int llsetOldtio(int *fd){
     return 0;
 }
 
-int constructControlWord(char * word, int type){
-
+int constructControlWord(char * word, int type, int response){
+	char A;//CAMPO DE ENDEREÇO
+	char C;
 	
+	//TODO:MACROS FOR THIS 
+	//Word is a response if int response == 1;
 
-	strcpy(word, "0x7Eh");//FLAG
-
-	if(MACHINE_ROLE == EMITOR)//CAMPO DE ENDEREÇO
-		strcpy(word, "0x03");
-	else
-		strcpy(word, "0x01");
- 	
+	//CAMPO DE ENDEREÇO
+	if(MACHINE_ROLE == EMITOR && response==0){
+		A=0x03;
+	}
+	else if(MACHINE_ROLE == RECEIVER && response==1){
+		A=0x03;
+	}
+	else if(MACHINE_ROLE == RECEIVER && response==0){
+		A=0x01;
+	}
+	else if(MACHINE_ROLE == EMITOR && response==1){
+		A=0x01;
+	}
 
 	switch(type){//CAMPO DE CONTROLO
 		case(SET):
-			strcpy(word, "0x3h");
-			return 0;				
+			C=0x03;				
 			break;
 		case(DISC):
-			strcpy(word, "0xBh");
-			return 0;				
+			C=0x0B;				
 			break;
 		case(UA):
-			strcpy(word, "0x7h");
-			return 0;				
+			C=0x07;	
 			break;
 		case(RR):
-			strcpy(word, "0x5h");
-			return 0;				
+			C=0x05;
+			//TODO
+			//Missing N(r)-->identifier of packet sent(either 1 or 0)				
 			break;
 		case(REJ):
-			strcpy(word, "0x1h");
-			return 0;				
+			C=0x01;
+			//TODO
+			//Missing N(r)-->identifier of packet sent(either 1 or 0)				
 			break;
 		default:
 			printf("Control word not defined\n");
 			return 1;
 	}
+
+	word[0]=FLAG;
+	word[1]=A;
+	word[2]=C;
+	word[3]=A^C;  //BCC
+	word[4]=FLAG;
+
+	return 0;
+}
+
+
+int byteStuffing(char * word, int size, char * buff){
+	int j=0;	
+	for(int i = 0; i < size; i++){
+		switch(word[i]){
+			case ESCAPE:
+				buff[j]=ESCAPE;
+				j++;
+				buff[j]=word[i]^STUFFING;
+				j++;	
+				break;
+			case FLAG:
+				buff[j]=ESCAPE;
+				j++;
+				buff[j]=word[i]^STUFFING;
+				j++;
+				break;
+			default:
+				buff[j]=word[i];
+				j++; 
+		}
+	}
+	
+	return j;
+}
+
+
+int byteDestuffing(char * word, int size, char * buff){
+	int j=0;
+	for(int i = 0; i < size; i++){
+		if(word[i]==ESCAPE){
+			i++;			
+			word[i]=word[i]^STUFFING;
+		}
+
+		buff[j]=word[i];
+		j++;
+	}
+	
+	return j;
 }
 
 
@@ -117,7 +175,7 @@ int llopen(char* port, int machine_role){
 	char set[255], msg[255], buf[255];
 	int i=0, res;
 
-	constructControlWord(set, SET);
+	constructControlWord(set, SET, 0);
 	
 	if(MACHINE_ROLE==RECEIVER){	
 		while(STOP==FALSE) {
