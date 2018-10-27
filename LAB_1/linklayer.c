@@ -56,7 +56,9 @@ int llsetOldtio(int *fd){
     return 0;
 }
 
-int constructControlWord(char * word, int type, int response){
+int sendControlWord(int fd, int type, int response){
+	char * word;
+
 	char A;//CAMPO DE ENDEREÇO
 	char C;
 	
@@ -108,7 +110,30 @@ int constructControlWord(char * word, int type, int response){
 	word[3]=A^C;  //BCC
 	word[4]=FLAG;
 
+
+	write(fd, word, strlen(word));
+
 	return 0;
+}
+
+
+int getControlWord(int fd){
+	char * word;
+	
+	int i = 0;
+
+	while(i <= 4) {
+		res = read(fd, &byte, 1);
+		
+		if (res < 1)
+			return word;
+
+		word[i] = byte;
+		
+		i++;
+	}
+
+	return word;
 }
 
 
@@ -155,7 +180,7 @@ int byteDestuffing(char * word, int size, char * buff){
 
 
 
-int llopen(char* port, int machine_role){
+int llopen(char* port, int machine_role, char * file){
 	MACHINE_ROLE=machine_role;
 	
 	int fd;
@@ -175,67 +200,27 @@ int llopen(char* port, int machine_role){
 	char set[255], msg[255], buf[255];
 	int i=0, res;
 
-	constructControlWord(set, SET, 0);
 	
 	if(MACHINE_ROLE==RECEIVER){	
 		while(STOP==FALSE) {
-			res= read(fd, buf, 1);
-			if(res>0){
-				msg[i]=buf[0];
-				msg[i+1]=0;	
-				i++;	
+			if(getControlWord(fd)[2] == SET){
+				sendControlWord(fd, UA, 0);
+				printf("connected\n");
+				STOP = TRUE;
 			}
-
-			if( i!=0 && strncmp(set, msg, i)!=0){
-				i=0;
-				printf(" %s : trashed received\n", msg);
-			}
-
-			if(!ALARM_COUNTING || res>0){
-   	   			alarm(3);                 // activa alarme de 3s
-   	   			ALARM_FLAG=FALSE;
-   			}
-		
-			if(strncmp(set, msg, strlen(set))==0 || i==254) STOP=TRUE;
-		}
-
-		printf("MSG received: ");	
-		printf("%s : %d\n", msg, i);
-
-		printf("\n---------------------------------\nSending_MSG\n---------------------------------\n");
-
-		res = write(fd,msg, i);   
-    		printf("%d bytes written\n", res);
-	
+		}	
 	}else if (MACHINE_ROLE==EMITOR){
-		res = write(fd,set, strlen(set));   
-    		printf("%d bytes written\n", res);
-
-		printf("\n---------------------------------\nReceiving_MSG\n---------------------------------\n");
-		while(STOP==FALSE) {
-			res= read(fd, buf, 1);
-			if(res>0){
-				msg[i]=buf[0];
-				msg[i+1]=0;	
-				i++;	
-			}
-
-			if( i!=0 && strncmp(set, msg, i)!=0){
-				i=0;
-				printf(" %s : trashed received\n", msg);
-			}
-
-			if(!ALARM_COUNTING || res>0){
-   	   			alarm(3);                 // activa alarme de 3s
-   	   			ALARM_FLAG=FALSE;
-   			}
-		
-			if(strncmp(set, msg, strlen(set))==0 || i==254) STOP=TRUE;
+		sendControlWord(fd, SET, 0);
+		if(!ALARM_COUNTING || res>0){
+			alarm(3);
+			ALARM_FLAG=FALSE;
 		}
-
-		printf("MSG received: ");	
-		printf("%s : %d\n", msg, i);
-
+		while(STOP==FALSE) {
+			if(getControlWord(fd)[2] == UA){
+				printf("connected\n");
+				STOP = TRUE;
+			}
+		}
 	}	
 
 	if(llsetOldtio(&fd)){
@@ -244,6 +229,7 @@ int llopen(char* port, int machine_role){
 	}
 	return 0;
 }
+
 
 
 //Alarm Functions

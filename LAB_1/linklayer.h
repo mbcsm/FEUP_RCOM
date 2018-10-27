@@ -67,7 +67,7 @@ int ByteStuffing(char * word, int size, char * buff);
 //0==Emitor
 //1=Receiver
 //return "1" on error and "0" on sucesses*/  
-int llopen(char* port, int machine_role);
+int llopen(char* port, int machine_role, char * file);
 
 
 /*Alarm Functions*/
