@@ -30,6 +30,9 @@
 #define ESCAPE 0x7d
 #define STUFFING 0x20
 
+//SIZES
+#define DATA_PACKET_SIZE 6
+
 //PORT
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
@@ -68,7 +71,11 @@ int ByteStuffing(char * word, int size, char * buff);
 //1=Receiver
 //return "1" on error and "0" on sucesses*/  
 int llopen(char* port, int machine_role, char * file);
-
+int llwrite(unsigned char* buf, int bufSize);
+int sendFile(char * file);
+int sendControlPacket(int type, char * filePath, int fileSize);
+int sendDataPacket(int N , char * buffer, int nBytes);
+int fsize(FILE *fp);
 
 /*Alarm Functions*/
 
