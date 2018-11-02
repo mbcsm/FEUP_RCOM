@@ -270,7 +270,28 @@ int llread(char* package){
 }
 
 int llclose(){
-	//TODO
+
+	if(ll->role==RECEIVER){	
+		int state = 0;
+		while(STOP==FALSE) {
+			if(getControlWord()[2] == DISC){
+				state = 1;
+			}else if(getControlWord()[2] == UA && state = 1){
+				printf("Disconnected\n");
+				STOP = TRUE;
+			}
+		}
+	}else if (ll->role==EMITOR){
+		sendControlWord(DISC, 0);
+		while(STOP==FALSE) {
+			if(getControlWord()[2] == DISC){
+				sendControlWord(UA, 0);
+				printf("Disconnected\n");
+				STOP = TRUE;
+			}
+		}	
+	}	
+
 	return -1;
 }
 
