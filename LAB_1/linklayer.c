@@ -84,7 +84,7 @@ int sendControlWord(int type, int response){
 	//TODO:MACROS FOR THIS 
 	//Word is a response if int response == 1;
 
-	//CAMPO DE ENDEREÇO
+	//CAMPO DE ENDEREÇOW
 	if(ll->role == EMITOR && response==0){
 		A=0x03;
 	}
@@ -264,9 +264,26 @@ int llwrite(char* buf, int bufSize) {
 }
 
 int llread(char* package){
-	//TODO
+	int dataSize;
+	boolean received = false;
+	char* message;
+	int status = 0, size = 0;
+	while (!received) {
+		message = receiveMessage(&status, &size);
+		
+		switch (status) {
+		case -1:
+			sendControlWord(REJ, 1);
+			break;
+		case 0:
+			sendControlWord(RR, 1);
+			received = true;
+			break;
+		}
+	}
+	
 	/*It returns the size of the package and -1 on failure*/
-	return -1;
+	return size;
 }
 
 int llclose(){
@@ -295,6 +312,79 @@ int llclose(){
 	return -1;
 }
 
+
+char* receiveMessage(int status) {
+	int steps = 0;
+
+	unsigned char* message = malloc(512);
+
+	boolean done = false;
+	while (steps < 5) {
+		unsigned char c;
+
+		int bytes = read(fd, &c, 1);		
+
+		switch (steps) {
+		case 0:
+			if (c == FLAG) {
+				message[size] = c;
+				size++;
+				steps = 1;
+			}
+			break;
+		case 1:
+			if (c == A) {
+				message[size] = c;
+				size++;
+				steps = 2;
+			}
+			break;
+		case 2:
+			message[size] = c;
+			size++;
+			steps = 3;
+			break;
+		case 3:
+			if (c == (message[1] ^ message[2])) {
+				message[size] = c;
+				size++;
+				steps = 4;
+			}
+			break;
+		case 4:
+			message[size] = c;
+			size++;
+			if (c == FLAG) {
+				steps = 5;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
+	size = byteDestuffing(message, size, &message);
+
+	//check if BCC1 is correct
+	if (message[3] != (message[1] ^ message[2])) {
+		status = -1;
+		return message;
+	}
+
+	int dataSize = size - 6 * sizeof(char);
+
+	unsigned char BCC2 = getBCC2(&message[4], dataSize);
+
+	//check if BCC2 is correct
+	if (calcBCC2 != message[4 + dataSize]) {
+		status = -1;
+		return message;
+	}
+
+	return message;
+}
+
+
 int sendData(char* data, int size) {
 	int packageSize = size + DATA_PACKET_SIZE;
 
@@ -318,7 +408,7 @@ int sendData(char* data, int size) {
 	int packageSizeAfterStuffing = byteStuffing(package, packageSize, packageAfterStuffing);
 	
 	write(fd, packageAfterStuffing, packageSizeAfterStuffing);
-
+	
 	return 0;
 }
 
