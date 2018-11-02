@@ -267,7 +267,7 @@ int llread(char* package){
 	int dataSize;
 	boolean received = false;
 	char* message;
-	int status = 0, size = 0;
+	int status = 0, size = 0, type = 0;
 	while (!received) {
 		message = receiveMessage(&status, &size);
 		
@@ -275,7 +275,11 @@ int llread(char* package){
 		case -1:
 			sendControlWord(REJ, 1);
 			break;
-		case 0:
+		case 1:
+			if (message[2] == DISC)
+				received = true;
+			break;
+		case 2:
 			sendControlWord(RR, 1);
 			received = true;
 			break;
@@ -313,7 +317,7 @@ int llclose(){
 }
 
 
-char* receiveMessage(int status) {
+char* receiveMessage(int status, int size) {
 	int steps = 0;
 
 	unsigned char* message = malloc(512);
@@ -355,6 +359,9 @@ char* receiveMessage(int status) {
 			message[size] = c;
 			size++;
 			if (c == FLAG) {
+				status = 1;//COMMAND
+			}else{
+				status = 2;//DATA
 				steps = 5;
 			}
 			break;
