@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall
-DEPS = linklayer.h
-OBJ = main.c linklayer.c
+DEPS = linklayer.h applicationlayer.h
+OBJ = main.c linklayer.c applicationlayer.c
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

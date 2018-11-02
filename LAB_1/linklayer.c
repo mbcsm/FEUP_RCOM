@@ -1,19 +1,36 @@
 #include "linklayer.h"
 
+struct linkLayer *ll;
+
 //alarm variabels
 volatile int ALARM_COUNTING=FALSE;
 int ALARM_COUNT=5;
 int ALARM_FLAG = FALSE;
 volatile int STOP=FALSE;
 
-//machine 
-int MACHINE_ROLE=NOT_DEFINED;
-
 struct termios oldtio, newtio;
 
 int fd;
 
-int llsetNewtio(char * port, int *fd){
+int configConection(char* serialPort, int role, int baudRate, int numTries, int timeOut){
+	//alocate mem for stuct
+    ll= (struct linkLayer*) malloc(sizeof(struct linkLayer));
+	
+	ll->serialPort=serialPort;
+    ll->role=role;
+    ll->baudRate=baudRate;
+    ll->numTries=numTries;
+    ll->timeOut=timeOut;
+
+	return 0;
+}
+
+int freeMemoryLinkLayer(){
+	free(ll);
+	return 0;
+}
+
+int llsetNewtio(){
 
 	  /*
 		Open serial port device for reading and writing and not as controlling tty
@@ -21,10 +38,10 @@ int llsetNewtio(char * port, int *fd){
 	  */
   
     
-    *fd = open(port, O_RDWR | O_NOCTTY );
-    if (*fd <0) {perror(port); exit(-1); }
+    ll->serialPortDescriber = open(ll->serialPort, O_RDWR | O_NOCTTY );
+    if (ll->serialPortDescriber <0) {perror(ll->serialPort); exit(-1); }
 
-    if ( tcgetattr(*fd,&oldtio) == -1) { /* save current port settings */
+    if ( tcgetattr(ll->serialPortDescriber,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");
       exit(-1);
     }
@@ -41,9 +58,9 @@ int llsetNewtio(char * port, int *fd){
     newtio.c_cc[VMIN]     = 0;   /* not blocking read */
 
 
-    tcflush(*fd, TCIOFLUSH);
+    tcflush(ll->serialPortDescriber, TCIOFLUSH);
 
-    if ( tcsetattr(*fd,TCSANOW,&newtio) == -1) {
+    if ( tcsetattr(ll->serialPortDescriber,TCSANOW,&newtio) == -1) {
       perror("tcsetattr");
       exit(-1);
     }
@@ -52,9 +69,9 @@ int llsetNewtio(char * port, int *fd){
     return 0;
 }
 
-int llsetOldtio(int *fd){
-    tcsetattr(*fd,TCSANOW,&oldtio);
-    close(*fd);
+int llsetOldtio(){
+    tcsetattr(ll->serialPortDescriber,TCSANOW,&oldtio);
+    close(ll->serialPortDescriber);
     return 0;
 }
 
@@ -68,16 +85,16 @@ int sendControlWord(int type, int response){
 	//Word is a response if int response == 1;
 
 	//CAMPO DE ENDEREÇO
-	if(MACHINE_ROLE == EMITOR && response==0){
+	if(ll->role == EMITOR && response==0){
 		A=0x03;
 	}
-	else if(MACHINE_ROLE == RECEIVER && response==1){
+	else if(ll->role == RECEIVER && response==1){
 		A=0x03;
 	}
-	else if(MACHINE_ROLE == RECEIVER && response==0){
+	else if(ll->role == RECEIVER && response==0){
 		A=0x01;
 	}
-	else if(MACHINE_ROLE == EMITOR && response==1){
+	else if(ll->role == EMITOR && response==1){
 		A=0x01;
 	}
 
@@ -119,13 +136,13 @@ int sendControlWord(int type, int response){
 }
 
 
-int getControlWord(){
+char* getControlWord(){
 	char * word;
-	
+	char byte;
 	int i = 0;
 
 	while(i <= 4) {
-		res = read(fd, &byte, 1);
+		int res = read(fd, &byte, 1);
 		
 		if (res < 1)
 			return word;
@@ -182,10 +199,8 @@ int byteDestuffing(char * word, int size, char * buff){
 
 
 
-int llopen(char* port, int machine_role){
-	MACHINE_ROLE=machine_role;
-	
-	if(llsetNewtio(port, &fd)){
+int llopen(){
+	if(llsetNewtio(&fd)){
 		printf("Problem seting the new termios structure\n");
 		return 1;
 	}
@@ -195,11 +210,11 @@ int llopen(char* port, int machine_role){
 	(void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
 
 
-	char set[255], msg[255], buf[255];
-	int i=0, res;
-
+	//char set[255], msg[255], buf[255];
+	//int i=0, res;
+	int res;
 	
-	if(MACHINE_ROLE==RECEIVER){	
+	if(ll->role==RECEIVER){	
 		while(STOP==FALSE) {
 			if(getControlWord()[2] == SET){
 				sendControlWord(UA, 0);
@@ -207,7 +222,7 @@ int llopen(char* port, int machine_role){
 				STOP = TRUE;
 			}
 		}	
-	}else if (MACHINE_ROLE==EMITOR){
+	}else if (ll->role==EMITOR){
 		sendControlWord(SET, 0);
 		if(!ALARM_COUNTING || res>0){
 			alarm(3);
@@ -228,9 +243,9 @@ int llopen(char* port, int machine_role){
 	return 0;
 }
 
-int llwrite(unsigned char* buf, int bufSize) {
+int llwrite(char* buf, int bufSize) {
 	STOP = FALSE;
-	sendData(buf, bufSize);
+	int res=sendData(buf, bufSize);
 	
 	if(!ALARM_COUNTING || res>0){
 		alarm(3);
@@ -241,17 +256,28 @@ int llwrite(unsigned char* buf, int bufSize) {
 		if (getControlWord()[2] == RR) {
 			STOP = TRUE;
 			break;
-		} else if (getControlWord()[2] == RJ)) {
+		} else if (getControlWord()[2] == REJ) {
 			STOP = TRUE;
 		}
 	}
 	return 0;
 }
 
-int sendData(unsigned char* data, unsigned int size) {
+int llread(char* package){
+	//TODO
+	/*It returns the size of the package and -1 on failure*/
+	return -1;
+}
+
+int llclose(){
+	//TODO
+	return -1;
+}
+
+int sendData(char* data, int size) {
 	int packageSize = size + DATA_PACKET_SIZE;
 
-	unsigned char* package[packageSize];
+	char package[packageSize];
 	
 	char F = FLAG;
 	char A = 0x03;
@@ -268,14 +294,14 @@ int sendData(unsigned char* data, unsigned int size) {
 	package[5 + size] = F;
 
 	char * packageAfterStuffing;
-	packageSizeAfterStuffing = byteStuffing(package, packageSize, packageAfterStuffing);
+	int packageSizeAfterStuffing = byteStuffing(package, packageSize, packageAfterStuffing);
 	
 	write(fd, packageAfterStuffing, packageSizeAfterStuffing);
 
 	return 0;
 }
 
-
+/*
 int sendFile(char * file){
 	fileSize = fsize(file);
 
@@ -304,7 +330,7 @@ int sendControlPacket(int type, char * filePath, int fileSize){
 
 	int packageSize = 5 + strlen(fileSize) + strlen(filePath);
 
-	unsigned char package[packageSize];
+	char package[packageSize];
 
 	package[0] = type;
 
@@ -333,29 +359,30 @@ int sendControlPacket(int type, char * filePath, int fileSize){
 
 	return 0;
 }
+
 int sendDataPacket(int N , char * buffer, int nBytes) {
-	unsigned char C = 1;
-	unsigned char L2 = nBytes / 256;
-	unsigned char L1 = nBytes % 256;
+	char C = 1;
+	char L2 = nBytes / 256;
+	char L1 = nBytes % 256;
 
 	int packageSize = 4 + nBytes;
 
-	unsigned char* package[packageSize];
+	char package[packageSize];
 
-	package[0] = c;
+	package[0] = C;
 	package[1] = N;
 	package[2] = L2;
 	package[3] = L1;
 
 	memcpy(&package[4], buffer, nBytes);
 
-	llwrite(buffer, packageSize)
+	llwrite(buffer, packageSize);
 
 	return 0;
 }
-
-unsigned char getBCC2(unsigned char* data, unsigned int size) {
-	unsigned char BCC2 = 0;
+*/
+char getBCC2(char* data, int size) {
+	char BCC2 = 0;
 
 	for (int i = 0; i < size; i++)
 		BCC2 ^= data[i];

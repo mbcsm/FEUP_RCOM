@@ -11,6 +11,15 @@
 #include <unistd.h>
 #include <string.h>
 
+struct linkLayer{
+    char* serialPort;
+    int serialPortDescriber;
+    int role;
+    int baudRate;
+    int numTries;
+    int timeOut;
+};
+
 //MACHINE_ROLE
 #define NOT_DEFINED -1
 #define EMITOR 0
@@ -43,14 +52,20 @@
 
 
 /* port control functions*/
+int configConection(char * serialPort, int role, int baudRate, int numTries, int timeOut);
+
+
+int freeMemoryLinkLayer();
+
+
  
 //Set the new termios structure on "port" and open it on "fd"
 //return "1" on error and "0" on sucesses
-int llsetNewtio(char * port, int *fd);
+int llsetNewtio();
 
 //Reset the termios structure of the port and close "fd"
 //return "1" on error and "0" on sucesses
-int llsetOldtio(int *fd);
+int llsetOldtio();
 
 /*Conection Functions*/
 
@@ -70,12 +85,20 @@ int ByteStuffing(char * word, int size, char * buff);
 //0==Emitor
 //1=Receiver
 //return "1" on error and "0" on sucesses*/  
-int llopen(char* port, int machine_role, char * file);
-int llwrite(unsigned char* buf, int bufSize);
-int sendFile(char * file);
-int sendControlPacket(int type, char * filePath, int fileSize);
-int sendDataPacket(int N , char * buffer, int nBytes);
-int fsize(FILE *fp);
+int llopen();
+int llwrite(char* buf, int bufSize);
+int llread(char* package);
+int llclose();
+
+int sendData(char* data, int size);
+
+//int sendFile(char * file);
+//int sendControlPacket(int type, char * filePath, int fileSize);
+//int sendDataPacket(int N , char * buffer, int nBytes);
+//int fsize(FILE *fp);
+
+
+char getBCC2(char* data, int size);
 
 /*Alarm Functions*/
 
