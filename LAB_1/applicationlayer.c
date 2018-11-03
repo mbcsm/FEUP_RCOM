@@ -4,7 +4,9 @@ struct applicationLayer *al;
 
 int applicationLayerMain(char* serialPort,  int role, char *fileName, int maxDataSize, int baudRate, int numTries, int timeOut){
     //alocate mem for stuct
+	printf("---%d---\n", role);
     al= (struct applicationLayer*) malloc(sizeof(struct applicationLayer));
+	printf("2\n");
 
     //Config Application Parameters
     if(configApplication(serialPort, role, fileName, maxDataSize)==ERROR){
@@ -134,7 +136,8 @@ int sendControlPackage(int type){
 	package[c] = strlen(temp);
     c++;
     //V1 (Size of File)
-    for (unsigned int i = 0; i < strlen(temp); i++) {
+	int i = 0;
+    for ( i; i < strlen(temp); i++) {
 		package[c] = temp[i];
         c++;
 	}
@@ -146,7 +149,8 @@ int sendControlPackage(int type){
 	package[c] = strlen(al->fileName);
         c++;
     //V2 (Name of File)    
-	for (unsigned int k = 0; k < strlen(al->fileName); k++) {
+	int k = 0;
+	for (k; k < strlen(al->fileName); k++) {
 		package[c] = al->fileName[k];
         c++;
     }

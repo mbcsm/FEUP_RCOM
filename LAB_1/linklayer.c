@@ -76,11 +76,13 @@ int llsetOldtio(){
 }
 
 int sendControlWord(int type, int response){
-	char * word;
+	char * word[5];
 
 	char A;//CAMPO DE ENDEREÇO
 	char C;
 	
+	printf("--a1--\n");
+
 	//TODO:MACROS FOR THIS 
 	//Word is a response if int response == 1;
 
@@ -97,6 +99,7 @@ int sendControlWord(int type, int response){
 	else if(ll->role == EMITOR && response==1){
 		A=0x01;
 	}
+	printf("--a2--\n");
 
 	switch(type){//CAMPO DE CONTROLO
 		case(SET):
@@ -123,6 +126,7 @@ int sendControlWord(int type, int response){
 			return 1;
 	}
 
+	printf("--a3--\n");
 	word[0]=FLAG;
 	word[1]=A;
 	word[2]=C;
@@ -130,7 +134,11 @@ int sendControlWord(int type, int response){
 	word[4]=FLAG;
 
 
-	write(fd, word, strlen(word));
+
+	printf("--a4--\n");
+
+	write(ll->serialPortDescriber, word, strlen(word));
+	printf("--a5--\n");
 
 	return 0;
 }
@@ -142,8 +150,9 @@ char* getControlWord(){
 	int i = 0;
 
 	while(i <= 4) {
-		int res = read(fd, &byte, 1);
+		int res = llread("asd");
 		
+	
 		if (res < 1)
 			return word;
 
@@ -158,7 +167,8 @@ char* getControlWord(){
 
 int byteStuffing(char * word, int size, char * buff){
 	int j=0;	
-	for(int i = 0; i < size; i++){
+	int i = 0;
+	for(i; i < size; i++){
 		switch(word[i]){
 			case ESCAPE:
 				buff[j]=ESCAPE;
@@ -184,7 +194,8 @@ int byteStuffing(char * word, int size, char * buff){
 
 int byteDestuffing(char * word, int size, char * buff){
 	int j=0;
-	for(int i = 0; i < size; i++){
+	int i = 0;
+	for(i; i < size; i++){
 		if(word[i]==ESCAPE){
 			i++;			
 			word[i]=word[i]^STUFFING;
@@ -200,7 +211,8 @@ int byteDestuffing(char * word, int size, char * buff){
 
 
 int llopen(){
-	if(llsetNewtio(&fd)){
+	printf("-1a-\n");
+	if(llsetNewtio()){
 		printf("Problem seting the new termios structure\n");
 		return 1;
 	}
@@ -213,9 +225,15 @@ int llopen(){
 	//char set[255], msg[255], buf[255];
 	//int i=0, res;
 	int res;
+
 	
+	printf("-1a-\n");
 	if(ll->role==RECEIVER){	
 		while(STOP==FALSE) {
+			printf("-1-\n");
+			char * message = receiveMessage(0, 1);
+			
+			printf("-23%c-\n", message);//TODO: SEGEMENTATION FAULT HAPPENS HERE
 			if(getControlWord()[2] == SET){
 				sendControlWord(UA, 0);
 				printf("connected\n");
@@ -223,12 +241,15 @@ int llopen(){
 			}
 		}	
 	}else if (ll->role==EMITOR){
+		printf("-a-\n");
 		sendControlWord(SET, 0);
+		printf("-b-\n");
 		if(!ALARM_COUNTING || res>0){
 			alarm(3);
 			ALARM_FLAG=FALSE;
 		}
 		while(STOP==FALSE) {
+			printf("-c-\n");
 			if(getControlWord()[2] == UA){
 				printf("connected\n");
 				STOP = TRUE;
@@ -236,7 +257,7 @@ int llopen(){
 		}
 	}	
 
-	if(llsetOldtio(&fd)){
+	if(llsetOldtio()){
 		printf("Problem seting the old termios structure\n");
 		return 1;
 	}
@@ -321,13 +342,15 @@ char* receiveMessage(int status, int size) {
 	int steps = 0;
 
 	unsigned char* message = malloc(512);
-
+	
 	int done = FALSE;
 	while (steps < 5) {
 		unsigned char c;
 
-		int bytes = read(fd, &c, 1);		
+		int bytes = read(ll->serialPortDescriber, &c, 1);
 
+		if(bytes == 0)
+			continue;
 		switch (steps) {
 		case 0:
 			if (c == FLAG) {
@@ -413,7 +436,7 @@ int sendData(char* data, int size) {
 	char * packageAfterStuffing;
 	int packageSizeAfterStuffing = byteStuffing(package, packageSize, packageAfterStuffing);
 	
-	write(fd, packageAfterStuffing, packageSizeAfterStuffing);
+	write(ll->serialPortDescriber, packageAfterStuffing, packageSizeAfterStuffing);
 	
 	return 0;
 }
@@ -501,7 +524,8 @@ int sendDataPacket(int N , char * buffer, int nBytes) {
 char getBCC2(char* data, int size) {
 	char BCC2 = 0;
 
-	for (int i = 0; i < size; i++)
+	int i = 0;
+	for (i; i < size; i++)
 		BCC2 ^= data[i];
 
 	return BCC2;
