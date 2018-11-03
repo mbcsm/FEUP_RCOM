@@ -265,7 +265,7 @@ int llwrite(char* buf, int bufSize) {
 
 int llread(char* package){
 	int dataSize;
-	boolean received = false;
+	int received = FALSE;
 	char* message;
 	int status = 0, size = 0, type = 0;
 	while (!received) {
@@ -277,11 +277,11 @@ int llread(char* package){
 			break;
 		case 1:
 			if (message[2] == DISC)
-				received = true;
+				received = TRUE;
 			break;
 		case 2:
 			sendControlWord(RR, 1);
-			received = true;
+			received = TRUE;
 			break;
 		}
 	}
@@ -297,7 +297,7 @@ int llclose(){
 		while(STOP==FALSE) {
 			if(getControlWord()[2] == DISC){
 				state = 1;
-			}else if(getControlWord()[2] == UA && state = 1){
+			}else if(getControlWord()[2] == UA && state == 1){
 				printf("Disconnected\n");
 				STOP = TRUE;
 			}
@@ -322,7 +322,7 @@ char* receiveMessage(int status, int size) {
 
 	unsigned char* message = malloc(512);
 
-	boolean done = false;
+	int done = FALSE;
 	while (steps < 5) {
 		unsigned char c;
 
@@ -337,11 +337,10 @@ char* receiveMessage(int status, int size) {
 			}
 			break;
 		case 1:
-			if (c == A) {
-				message[size] = c;
-				size++;
-				steps = 2;
-			}
+			message[size] = c;
+			size++;
+			steps = 2;
+			
 			break;
 		case 2:
 			message[size] = c;
@@ -383,7 +382,7 @@ char* receiveMessage(int status, int size) {
 	unsigned char BCC2 = getBCC2(&message[4], dataSize);
 
 	//check if BCC2 is correct
-	if (calcBCC2 != message[4 + dataSize]) {
+	if (BCC2 != message[4 + dataSize]) {
 		status = -1;
 		return message;
 	}

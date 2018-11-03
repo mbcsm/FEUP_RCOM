@@ -92,6 +92,8 @@ int llclose();
 
 int sendData(char* data, int size);
 
+char* receiveMessage(int status, int size);
+
 //int sendFile(char * file);
 //int sendControlPacket(int type, char * filePath, int fileSize);
 //int sendDataPacket(int N , char * buffer, int nBytes);
