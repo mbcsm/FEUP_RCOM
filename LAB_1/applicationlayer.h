@@ -10,7 +10,7 @@ struct applicationLayer {
 int role;                       /*TRANSMITTER | RECEIVER*/
 FILE *fileDescriptor;           /*Descritor of the File*/
 char *fileName;                 /*Name of the File*/
-long int sizeOfFile;            /*Size of the File*/ 
+long int sizeOfFile;            /*Size of the File*/
 int maxDataSize;                /*Max Size of Packages*/
 long int sizeDataProcessed;     /*Size of Data Processed so far*/
 };
@@ -46,7 +46,7 @@ int sendDataPackage(int N, int size, char* data);
 
 int receiveControlPackage();
 
-int receiveDataPackage(int* N, char** buf, int* length);
+int receiveDataPackage(int* N, char* buf, int* length);
 
 //Emitor Section
 long int calculateFileSize();
@@ -57,3 +57,6 @@ int sendFile();
 int receiveFile();
 
 #endif
+
+
+

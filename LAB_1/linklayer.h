@@ -18,6 +18,7 @@ struct linkLayer{
     int baudRate;
     int numTries;
     int timeOut;
+    int N;
 };
 
 //MACHINE_ROLE
@@ -34,6 +35,7 @@ struct linkLayer{
 
 //CONTROL BYTES
 #define FLAG 0x7e
+#define N_EQUALS_1 0x40
 
 //BYTE STUFFING
 #define ESCAPE 0x7d
@@ -92,7 +94,7 @@ int llclose();
 
 int sendData(char* data, int size);
 
-char* receiveMessage(int status, int size);
+char* receiveMessage(int* status, int *size);
 
 //int sendFile(char * file);
 //int sendControlPacket(int type, char * filePath, int fileSize);
@@ -106,13 +108,16 @@ char getBCC2(char* data, int size);
 
 /*Alarm Handler
 It turn the STOP flag True after ALARM_COUNT turns 0
-ALARM_COUNT decresses by one after "n" time defined with alarm(int n); 
-*/ 
+ALARM_COUNT decresses by one after "n" time defined with alarm(int n);
+*/
 void atende();
 
 /*It defines the Number of timeouts
-If "0" alarm will run only once. 
+If "0" alarm will run only once.
 */
 int setNumberOfTimeOuts(int n);
 
 #endif
+
+
+

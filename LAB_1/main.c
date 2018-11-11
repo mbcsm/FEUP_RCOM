@@ -9,6 +9,6 @@ int main(int argc, char** argv){
     	}
 	
 	int role = strtol(argv[2], NULL, 10);
-    applicationLayerMain(argv[1], role, argv[3],1000, 5, 512, 500);
+    applicationLayerMain(argv[1], role, argv[3],10, 5, 5, 2);
 	return 0;
 }
