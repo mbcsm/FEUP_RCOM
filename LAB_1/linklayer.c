@@ -432,10 +432,24 @@ char* receiveMessage(int * status, int * size) {
     unsigned char* message = malloc(512);
     
     int done = FALSE;
+    int end = 0;
     while (steps < 5 && STOP!=TRUE) {
         unsigned char c;
 
         int bytes = read(ll->serialPortDescriber, &c, 1);
+
+        if(end = 1 && bytes == 0){
+            *status = 2;//DATA
+            steps = 5;
+            break;
+        }else 
+        if(end = 1 && bytes > 0){
+            message[tempSize] = c;
+            tempSize++;
+            steps = 1;
+            end  = 0;
+            break;
+        }
 
         if(bytes == -1 || bytes == 0)
             continue;
@@ -449,17 +463,35 @@ char* receiveMessage(int * status, int * size) {
             }
             break;
         case 1:
+            if (c == 0x7e) {
+                steps = 1;
+                tempSize =  1;
+                message[1] = c;
+                break;
+            }
             message[tempSize] = c;
             tempSize++;
             steps = 2;
             
             break;
         case 2:
-                message[tempSize] = c;
-                tempSize++;
-                steps = 3;
+            if (c == 0x7e) {
+                steps = 1;
+                tempSize =  1;
+                message[1] = c;
+                break;
+            }
+            message[tempSize] = c;
+            tempSize++;
+            steps = 3;
             break;
         case 3:
+            if (c == 0x7e) {
+                steps = 1;
+                tempSize =  1;
+                message[1] = c;
+                break;
+            }
             if (c == message[1] ^ message[2]) {
                 message[tempSize] = c;
                 tempSize++;
@@ -469,12 +501,24 @@ char* receiveMessage(int * status, int * size) {
         case 4:
             message[tempSize] = c;
             tempSize++;
-            if (c == 0x7e && tempSize == 5) {
+             if (c == 0x7e && tempSize < 5) {
+                steps = 1;
+                tempSize =  1;
+                message[1] = c;
+                break;
+            }else if (c == 0x7e && tempSize == 5) {
                 *status = 1;//COMMAND
                 steps = 5;
+                break;
+            }else if (c == 0x7e && tempSize > 5 && tempSize < 10) {
+                *status = 2;//DATA
+                steps = 4;
+                end = 1;
+                break;
             }else if (c == 0x7e && tempSize > 5) {
                 *status = 2;//DATA
                 steps = 5;
+                break;
             }
             break;
         default:
