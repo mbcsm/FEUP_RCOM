@@ -444,9 +444,9 @@ char* receiveMessage(int * status, int * size) {
             break;
         }else 
         if(end = 1 && bytes > 0){
-            message[tempSize] = c;
-            tempSize++;
-            steps = 1;
+            message[0] = 0x7e;
+            tempSize=1;
+            steps = 2;
             end  = 0;
             break;
         }
